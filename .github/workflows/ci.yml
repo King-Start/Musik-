@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  syntax-check:
+    name: Cek sintaks & jalankan server
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci --omit=dev || npm install --omit=dev
+
+      - name: Cek sintaks semua berkas JS
+        run: |
+          for f in server.mjs lib/*.mjs public/js/*.js; do
+            node --check "$f" || exit 1
+          done
+          echo "Semua berkas lolos cek sintaks."
+
+      - name: Jalankan server & cek health + halaman utama
+        run: |
+          node server.mjs &
+          for i in $(seq 1 30); do
+            curl -sf http://127.0.0.1:8080/api/health && break || sleep 1
+          done
+          curl -sf http://127.0.0.1:8080/ > /dev/null
+          curl -sf http://127.0.0.1:8080/js/app.js > /dev/null
+          echo "Server sehat."

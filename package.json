@@ -1,0 +1,28 @@
+{
+  "name": "auralys",
+  "version": "1.0.0",
+  "description": "Auralys — pemutar musik bergaya YouTube Music (Bahasa Indonesia) dengan katalog YouTube Music, lirik tersinkron, dan pengaturan lengkap.",
+  "private": true,
+  "type": "module",
+  "main": "server.mjs",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node server.mjs",
+    "dev": "node --watch server.mjs"
+  },
+  "keywords": [
+    "music",
+    "music-player",
+    "youtube-music",
+    "pwa",
+    "express",
+    "indonesia",
+    "lirik"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}
