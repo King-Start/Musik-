@@ -18,6 +18,11 @@ jobs:
   apk:
     name: Build APK Android
     runs-on: ubuntu-latest
+    env:
+      # semua perintah dijalankan non-interaktif agar tidak berhenti di prompt
+      CI: "true"
+      ANDROID_HOME: ${{ github.workspace }}/.android-sdk
+      ANDROID_SDK_ROOT: ${{ github.workspace }}/.android-sdk
     steps:
       - uses: actions/checkout@v4
 
@@ -27,20 +32,49 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+      - name: Cache Android SDK
+        uses: actions/cache@v4
+        with:
+          path: .android-sdk
+          key: android-sdk-34-v1
 
-      - name: Install SDK packages
-        run: sdkmanager "platforms;android-34" "build-tools;34.0.0" | tail -2
+      - name: Pasang Android SDK (tanpa prompt lisensi)
+        run: |
+          set -euo pipefail
+          BT_DIR="$ANDROID_HOME/build-tools/34.0.0"
+          PLATFORM="$ANDROID_HOME/platforms/android-34/android.jar"
+
+          if [ ! -f "$BT_DIR/aapt2" ] || [ ! -f "$PLATFORM" ]; then
+            echo "Mengunduh Android command-line tools…"
+            mkdir -p "$ANDROID_HOME/cmdline-tools"
+            curl -sSL -o /tmp/cmdline-tools.zip \
+              https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+            rm -rf /tmp/cmdline
+            unzip -q /tmp/cmdline-tools.zip -d /tmp/cmdline
+            rm -rf "$ANDROID_HOME/cmdline-tools/latest"
+            mv /tmp/cmdline/cmdline-tools "$ANDROID_HOME/cmdline-tools/latest"
+            export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$PATH"
+
+            # <<< ini penyebab kegagalan sebelumnya: sdkmanager menunggu jawaban lisensi
+            yes | sdkmanager --licenses > /dev/null 2>&1 || true
+            sdkmanager --install "platform-tools" "platforms;android-34" "build-tools;34.0.0" \
+              </dev/null 2>&1 | grep -v "^\[" | tail -5
+          else
+            echo "Android SDK sudah tersedia dari cache."
+          fi
+
+          echo "--- versi terpasang ---"
+          ls "$ANDROID_HOME/build-tools"
+          ls "$ANDROID_HOME/platforms"
 
       - name: (Opsional) Sematkan URL server ke dalam APK
-        if: ${{ github.event.inputs.server_url != '' }}
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.server_url != ''
         env:
           SERVER_URL: ${{ github.event.inputs.server_url }}
         run: |
-          python3 - <<'PY'
-          import os, re, pathlib
-          url = os.environ["SERVER_URL"].strip()
+          python3 - "$SERVER_URL" <<'PY'
+          import re, sys, pathlib
+          url = sys.argv[1].strip()
           p = pathlib.Path("android/src/main/res/values/strings.xml")
           s = p.read_text(encoding="utf-8")
           s = re.sub(r'<string name="server_url"[^>]*>.*?</string>',
@@ -49,10 +83,16 @@ jobs:
           print("server_url =", url)
           PY
 
-      - name: Build APK (signed, keystore baru per build)
+      - name: Build APK (signed)
         run: |
           chmod +x android/build-apk.sh
-          cd android && ./build-apk.sh
+          cd android
+          ./build-apk.sh app.auralys.music "${GITHUB_REF_NAME#v}"
+
+      - name: Info APK
+        run: |
+          "$ANDROID_HOME/build-tools/34.0.0/aapt2" dump badging android/build/Auralys.apk | head -5
+          ls -lh android/build/Auralys.apk
 
       - name: Upload artefak
         uses: actions/upload-artifact@v4
@@ -60,6 +100,7 @@ jobs:
           name: Auralys-apk
           path: android/build/Auralys.apk
           if-no-files-found: error
+          retention-days: 90
 
       - name: Lampirkan ke Release (saat push tag v*)
         if: startsWith(github.ref, 'refs/tags/v')
