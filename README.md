@@ -10,6 +10,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-black.svg)](LICENSE)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-3c873a.svg)](package.json)
 [![PWA](https://img.shields.io/badge/PWA-ready-5a0fc8.svg)](public/manifest.webmanifest)
+[![APK](https://img.shields.io/badge/Android-APK-3ddc84.svg)](android/build-apk.sh)
 
 </div>
 
@@ -125,6 +126,56 @@ menu ⋮ → **Tambahkan ke layar utama**. Aplikasi berjalan fullscreen seperti 
 (manifest + service worker sudah disertakan).
 </details>
 
+
+---
+
+## 📱 Aplikasi Android (APK)
+
+Repo ini menyertakan **shell Android native** (`android/`) yang membungkus web app Auralys
+dengan WebView — jadi aplikasi bisa di-install sebagai APK, lengkap dengan ikon launcher,
+tombol back hardware, dialog JS (prompt/confirm), pemilih berkas untuk impor cadangan, dan
+penyimpanan ekspor ke folder **Downloads**.
+
+### Cara build
+
+**A. Otomatis di GitHub (paling mudah — tanpa memasang apa pun)**
+
+1. Push repo → buka tab **Actions** → workflow **Build APK** → **Run workflow**.
+   (Opsional: isi `server_url` dengan URL hasil deploy agar APK langsung terhubung.)
+2. Setelah selesai, unduh artefak **Auralys-apk** → `Auralys.apk`.
+3. Push tag untuk merilis otomatis ke **Releases**:
+   ```bash
+   git tag v1.0.0 && git push origin v1.0.0
+   ```
+
+**B. Di komputer sendiri (butuh JDK 17 + Android SDK 34, tanpa Android Studio)**
+
+```bash
+# sekali saja: pasang toolchain
+export ANDROID_HOME=$HOME/android-sdk
+sdkmanager "platforms;android-34" "build-tools;34.0.0"
+
+cd android
+./build-apk.sh                    # ➜ android/build/Auralys.apk (signed)
+./build-apk.sh app.auralys.music 1.0.1
+```
+
+> `build-apk.sh` memakai `aapt2 → javac → d8 → zipalign → apksigner` langsung,
+> membuat keystore baru di `android/keystore/` (abaikan/Backup — **jangan di-commit**).
+> Tanpa Gradle/Android Studio, dan APK-nya hanya ~110 KB.
+
+### Install di HP
+
+1. Kirim `Auralys.apk` ke HP (WhatsApp/Drive/USB), lalu buka.
+2. Izinkan **"Instal dari sumber tidak dikenal"** bila diminta.
+3. Saat pertama dibuka, masukkan **alamat server** hasil deploy (mis. `https://auralys.up.railway.app`).
+   Ubah kapan saja via **Kamu → Tentang Auralys → Server aplikasi** (atau tombol menu hardware).
+
+> Kenapa butuh server? Katalog dan pemutaran berasal dari YouTube Music dan diambil lewat
+> backend Node di repo ini (tidak bisa diakses langsung dari APK karena CORS + pembatasan
+> YouTube). Deploy backend-nya gratis (lihat bagian **Deploy** di atas), lalu APK tinggal
+> menunjuk ke alamat itu. Web app-nya juga bisa dipasang sebagai PWA tanpa APK.
+
 ---
 
 ## 🗂️ Struktur proyek
@@ -147,6 +198,10 @@ auralys/
 │   │   ├── settings.js     # Kamu + semua layar pengaturan
 │   │   └── ui.js, icons.js, api.js
 │   ├── manifest.webmanifest, sw.js, icons/
+├── android/                # shell APK (WebView) + build-apk.sh
+│   ├── src/main/java/app/auralys/music/MainActivity.java
+│   ├── src/main/res/       # ikon, tema, strings (server_url)
+│   └── build-apk.sh        # aapt2 → javac → d8 → zipalign → apksigner
 ├── docs/screenshots/       # gambar untuk README
 ├── Dockerfile, render.yaml, vercel.json, Procfile
 └── .github/workflows/ci.yml
@@ -185,6 +240,10 @@ playlist bisa dibuat, diganti nama, dihapus, dan diisi dari menu ⋮ pada lagu m
 - **Lirik tersinkron** dari LRCLIB — baris aktif menyala & menggulir otomatis.
 - Tab **Terkait** (antrean radio), tambah ke pustaka, bagikan, buka di YouTube Music.
 - **Media Session API** — kontrol di layar kunci/notifikasi; **Wake Lock** (layar tetap nyala).
+
+**Versi Android** — WebView native: tombol back hardware menutup pemutar/sheet lalu kembali,
+`prompt()`/`confirm()` tampil sebagai dialog Android, ekspor cadangan tersimpan ke folder
+Downloads, impor berkas lewat pemilih berkas, dan tautan YouTube dibuka di browser.
 
 **Pengaturan (semua tersimpan permanen di perangkat)**
 - *Suara dan pemutaran*: kualitas audio, mode hemat data, crossfade, durasi riwayat,
@@ -235,5 +294,3 @@ berjalan. Silakan buka *Issue* untuk laporan bug atau ide fitur.
 ## 📄 Lisensi
 
 [MIT](LICENSE) © 2026 Auralys contributors
-# Musik-
-# Musik-

@@ -2,6 +2,18 @@
 
 Format mengikuti [Keep a Changelog](https://keepachangelog.com/id/1.1.0/).
 
+## [1.1.0] — 2026-11-22
+
+### Ditambahkan
+- **Aplikasi Android (APK)**: shell WebView native di `android/` — ikon launcher adaptif,
+  tombol back hardware, dialog JS native, pemilih berkas untuk impor cadangan, ekspor ke
+  folder Downloads, dan halaman *Server aplikasi* untuk mengubah alamat backend.
+- `android/build-apk.sh` — build APK tanpa Gradle/Android Studio
+  (`aapt2 → javac → d8 → zipalign → apksigner`), APK ~110 KB.
+- Workflow GitHub Actions **Build APK** (artefak + rilis otomatis saat push tag `v*`).
+- `downloadFile()` di web app: otomatis memakai MediaStore saat berjalan di dalam APK.
+- `window.AURALYS.back()` — penanganan tombol back yang sadar konteks (pemutar → sheet → riwayat).
+
 ## [1.0.0] — 2026-11-21
 
 ### Ditambahkan

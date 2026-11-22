@@ -7,7 +7,9 @@ import { renderLibrary, renderPlaylistPage } from "./library.js";
 import {
   renderYou, renderAudio, renderAppearance, renderContent, renderLyricsSettings,
   renderPrivacy, renderStorage, renderBackup, renderAuto, renderLinks, renderAbout, renderAccount,
+  renderServerInfo,
 } from "./settings.js";
+import { closeSheet } from "./core.js";
 import { renderMini, restorePlayerPrefs, openFullPlayer, closeFullPlayer, isFullPlayerOpen, P } from "./player.js";
 
 const view = document.getElementById("view");
@@ -108,6 +110,7 @@ const SETTINGS_ROUTES = {
   "/settings/links": renderLinks,
   "/settings/about": renderAbout,
   "/settings/account": renderAccount,
+  "/settings/server": renderServerInfo,
 };
 
 function render() {
@@ -215,8 +218,32 @@ if ("serviceWorker" in navigator && location.protocol !== "file:") {
   navigator.serviceWorker.register("/sw.js").catch(() => {});
 }
 
-/* ekspos untuk debugging & uji otomatis (aktif dengan ?debug=1) */
-window.AURALYS = { S, nav };
+/* navigasi kembali (dipakai tombol back Android lewat jembatan WebView) */
+function goBack() {
+  if (isFullPlayerOpen()) {
+    closeFullPlayer();
+    return true;
+  }
+  const anyMenu = document.querySelector(".menu.show, .sheet.show");
+  if (anyMenu) {
+    closeSheet();
+    document.querySelector("#menu-host").innerHTML = "";
+    return true;
+  }
+  if (historyStack.length > 1) {
+    historyStack.pop();
+    nav(historyStack[historyStack.length - 1], { replace: true });
+    return true;
+  }
+  if (location.pathname !== "/") {
+    nav("/", { replace: true });
+    return true;
+  }
+  return false;
+}
+
+/* ekspos untuk APK (tombol back) & debugging (aktif dengan ?debug=1) */
+window.AURALYS = { S, nav, back: goBack };
 if (new URLSearchParams(location.search).has("debug")) {
   import("./player.js").then((m) => (window.__A = { ...m }));
 }

@@ -22,7 +22,13 @@ Thumbs.db
 .idea/
 *.swp
 
-# build & test
+# build, APK & keystore (jangan pernah commit berkas tanda tangan)
+android/build/
+android/keystore/
+*.apk
+*.aab
+*.jks
+*.keystore
 dist/
 build/
 coverage/

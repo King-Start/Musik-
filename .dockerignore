@@ -6,3 +6,7 @@ npm-debug.log
 *.zip
 .env
 .env.*
+
+android/build
+android/keystore
+*.apk

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Auralys</string>
+    <!-- Kosongkan agar aplikasi menanyakan alamat server saat pertama dibuka.
+         Isi mis. https://auralys.up.railway.app untuk build yang langsung terhubung. -->
+    <string name="server_url" translatable="false"></string>
+</resources>

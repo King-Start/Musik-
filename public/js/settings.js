@@ -1,6 +1,7 @@
 /* settings.js — halaman Kamu + semua layar pengaturan */
 import {
   S, save, esc, toast, resetAll, exportData, importData, confirmSheet, openSheet, applyTheme, emit,
+  downloadFile, isAndroidApp, androidBridge,
 } from "./core.js";
 import { setVolume, setRate } from "./player.js";
 import { renderLibrary } from "./library.js";
@@ -334,12 +335,11 @@ export function renderBackup(root, nav) {
     </div>`;
   bindSettings(root, nav);
   root.querySelector("#exp").addEventListener("click", () => {
-    const blob = new Blob([exportData()], { type: "application/json" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = `auralys-backup-${new Date().toISOString().slice(0, 10)}.json`;
-    a.click();
-    toast("Cadangan diunduh");
+    const saved = downloadFile(
+      `auralys-backup-${new Date().toISOString().slice(0, 10)}.json`,
+      exportData()
+    );
+    toast(saved ? "Tersimpan di folder Downloads" : "Cadangan diunduh");
   });
   root.querySelector("#imp").addEventListener("click", () => {
     const inp = document.createElement("input");
@@ -481,6 +481,13 @@ export function renderAbout(root, nav) {
           perangkatmu.
         </div>`
       )}
+      ${
+        isAndroidApp()
+          ? `<div class="set-card" style="margin-top:14px">
+               ${`<button class="set-row" data-href="/settings/server">${window.icon("link", 22)}<span class="txt"><span class="t">Server aplikasi</span><span class="d">${esc(androidBridge()?.getServerUrl?.() || "")}</span></span>${window.icon("arrowRight", 18)}</button>`}
+             </div>`
+          : ""
+      }
       <div class="set-card" style="margin-top:14px">
         ${rowLink("Kebijakan privasi", "", "/settings/privacy", "shield")}
         ${rowLink("Sumber terbuka", "", "/settings/about", "link")}
@@ -489,6 +496,36 @@ export function renderAbout(root, nav) {
     </div>`;
   bindSettings(root, nav);
   nav.setTitle("Tentang Auralys");
+}
+
+/* ---------------------------- Server aplikasi (APK) --------------------- */
+export function renderServerInfo(root, nav) {
+  const bridge = androidBridge();
+  const url = bridge?.getServerUrl?.() || "—";
+  const version = bridge?.getVersion?.() || "1.0.0";
+  root.innerHTML = `
+    <div class="page settings">
+      ${group("Aplikasi Android")}
+      ${card(
+        `<div class="set-row"><span class="txt"><span class="t">Alamat server</span><span class="d">${esc(url)}</span></span></div>` +
+          `<div class="set-row"><span class="txt"><span class="t">Versi aplikasi</span><span class="d">${esc(version)}</span></span></div>` +
+          (bridge?.openSettings
+            ? `<button class="set-row" id="change-server">${window.icon("link", 22)}<span class="txt"><span class="t">Ubah alamat server</span><span class="d">Bila alamat deploy berubah</span></span>${window.icon("arrowRight", 18)}</button>`
+            : "")
+      )}
+      ${group("Tentang")}
+      ${card(
+        `<div class="pad" style="padding:16px;font-size:13px;line-height:1.7;color:var(--text-2)">
+          Versi Android ini adalah pembungkus (WebView) dari aplikasi web Auralys.
+          Semua data — playlist, lagu disukai, riwayat, pengaturan — tersimpan di perangkat.
+          Musik diputar melalui pemutar resmi YouTube, jadi butuh koneksi internet.
+        </div>`
+      )}
+      <div style="height:120px"></div>
+    </div>`;
+  bindSettings(root, nav);
+  root.querySelector("#change-server")?.addEventListener("click", () => bridge.openSettings());
+  nav.setTitle("Server aplikasi");
 }
 
 /* --------------------------------- Akun --------------------------------- */

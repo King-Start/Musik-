@@ -135,6 +135,31 @@ export function resetAll() {
 export function exportData() {
   return JSON.stringify(data, null, 2);
 }
+
+/* ---------------------------- jembatan Android --------------------------- */
+export function androidBridge() {
+  return window.AndroidBridge || null;
+}
+export function isAndroidApp() {
+  return !!window.AndroidBridge;
+}
+/** Unduh berkas; di aplikasi Android memakai MediaStore agar masuk folder Downloads. */
+export function downloadFile(name, content, mime = "application/json") {
+  const bridge = androidBridge();
+  if (bridge && typeof bridge.saveFile === "function") {
+    try {
+      bridge.saveFile(name, content);
+      return true;
+    } catch {}
+  }
+  const blob = new Blob([content], { type: mime });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1500);
+  return false;
+}
 export function importData(text) {
   const parsed = JSON.parse(text);
   data = deepMerge(structuredClone(DEFAULT_STATE), parsed);
